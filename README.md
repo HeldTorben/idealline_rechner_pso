@@ -28,6 +28,9 @@ Benötige Optimisierungszeit: 26.29 s
 berechnete Lösung: 227.34548
 
 
+![image](https://github.com/user-attachments/assets/5909781b-78e0-4e56-8fad-6fa5dd124943)
+![image](https://github.com/user-attachments/assets/d6ac36f5-6ff5-452b-b094-705672a877ee)
+
 
 
 

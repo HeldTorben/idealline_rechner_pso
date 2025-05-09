@@ -1,4 +1,4 @@
-'''
+"""
 Dieser Code gehört nicht zur Abgabe.
 Hier wird nur eine Rennstrecke gezeichnet/generiert,
 damit das Programm verschiedenste Strecken evaluieren kann.
@@ -11,7 +11,7 @@ Bedienung:
 3.  Mit Tastendruck "S" wird die gezeigte Rennstrecke
     gespeichert.
 4.  Programm beenden
-'''
+"""
 
 import pygame
 import json
@@ -22,7 +22,7 @@ pygame.init()
 width, height = 1000, 1000
 
 screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption('Rennstrecke durch Punkte zeichnen')
+pygame.display.set_caption("Rennstrecke durch Punkte zeichnen")
 clock = pygame.time.Clock()
 
 
@@ -36,17 +36,15 @@ white = (255, 255, 255)
 track_points = []
 running = True
 
+
 def save_race_track():
     # Strecke schließen, indem erster Punkt am Ende hinzugefügt
     if len(track_points) > 2:
         track_points.append(track_points[0])
-    track_data = {                      # Layout der .json
-        "test_track": {
-            "layout": track_points,
-            "width": 20                 # Breite der Rennstrecke
-        }
+    track_data = {  # Layout der .json
+        "test_track": {"layout": track_points, "width": 20}  # Breite der Rennstrecke
     }
-    with open("drawn_race_track.json", "w") as f:     # In .json schreiben
+    with open("drawn_race_track.json", "w") as f:  # In .json schreiben
         json.dump(track_data, f, indent=4)
     print("Strecke wurde gespeichert.")
 
@@ -57,25 +55,22 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:      # Mausklick Koords in track_points speichern
+        elif (
+            event.type == pygame.MOUSEBUTTONDOWN
+        ):  # Mausklick Koords in track_points speichern
             x, y = pygame.mouse.get_pos()
             track_points.append([x, y])
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_s:         # Speichern durch "S"
+            if event.key == pygame.K_s:  # Speichern durch "S"
                 save_race_track()
 
     if len(track_points) > 1:
-        pygame.draw.lines(screen, red, True, track_points)      # Rennstrecke wird vorgezeichnet on rot und geschlossen
+        pygame.draw.lines(
+            screen, red, True, track_points
+        )  # Rennstrecke wird vorgezeichnet on rot und geschlossen
 
     pygame.display.flip()
     clock.tick(60)
 
 
 pygame.quit()
-
-
-
-
-
-
-

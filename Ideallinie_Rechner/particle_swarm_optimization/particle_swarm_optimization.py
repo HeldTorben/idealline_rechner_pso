@@ -1,220 +1,217 @@
-'''
-Partikel-Schwarm-Optimierung (PSO) Implementation
+"""
+Partikel-Schwarm-Optimierung (PSO)
 
-Hier wird der PSO Algorithmus implementiert, welcher die
-gegebene Kostenfunktion minimiert.
-Ein Schwarm von Partikeln, die den Suchraum erkunden
-basierend auf Bestpositionen.
-
+Diese Datei enthält eine einfache Implementation der PSO-Methode zur
+Minimierung beliebiger Kostenfunktionen im kontinuierlichen Raum.
 
 Klassen:
-- Particle:         Repräsentiert ein einzelnes Partikel mit
-                    gegebener Position, Geschwindigkeit und
-                    best gefundener Position.
+- Particle: Repräsentiert ein Partikel mit Position, Geschwindigkeit und Bestposition
 
 Funktionen:
-- optimize:         Führt den Algorithmus aus, um eine optimale
-                    Lösung für die gegebene Funktion zu finden.
-- printProgressBar: Fügt eine Fortschrittsanzeige ein.
-
-Verwendung:
-optimize() muss für eine gegebene Kostenfunktion aufgerufen werden.
-'''
-
+- optimize: Führt den PSO-Algorithmus zur Optimierung aus
+- printProgressBar: Visualisiert den Fortschritt im Terminal
+"""
 
 import random
 import time
 
 
-
 class Particle:
-    '''
-    Partikel: Einzelner Lösungsversuch
-    - Position im Suchraum
-    - Geschwindigkeit
-    - bestgefundene Position
-    '''
+    """
+    Repräsentiert ein einzelnes Partikel im Schwarm.
+    Hält aktuelle Position, Geschwindigkeit und persönliche Bestposition.
+    """
 
     def __init__(self, n_dimensions, boundaries):
-        '''
-        n_dimensions: Anzahl der Dimensionen Suchraum
-        bounardies: Obergrenze für jede Dimension (Achsengrenzen)
-        '''
-        self.position = []
-        self.best_position = []
-        self.velocity = []
+        """
+        Initialisiert ein Partikel mit zufälliger Position und Geschwindigkeit.
 
-        # Position zufällig in Grenzen, Geschwindigkeit zufällig in +- Grenzen
-        for i in range(n_dimensions):
-            self.position.append(random.uniform(0, boundaries[i]))
-            self.velocity.append(random.uniform(-boundaries[i], boundaries[i]))
-        # Anfangs aktuelle Position = beste Position
-        self.best_position = self.position
+        Parameters
+        ----------
+        n_dimensions : int
+            Anzahl der Dimensionen des Suchraums
+        boundaries : list[float]
+            Obergrenze je Dimension
+        """
+        self.position = [random.uniform(0, boundaries[i]) for i in range(n_dimensions)]
+        self.velocity = [
+            random.uniform(-boundaries[i], boundaries[i]) for i in range(n_dimensions)
+        ]
+        self.best_position = self.position.copy()
 
-    def update_position(self, newVal):
-        # Position aktualisieren
-        self.position = newVal
+    def update_position(self, new_position):
+        self.position = new_position
 
-    def update_best_position(self, newVal):
-        # Beste bisherige Position aktualisieren
-        self.best_position = newVal
+    def update_best_position(self, new_best):
+        self.best_position = new_best
 
-    def update_velocity(self, newVal):
-        # Geschwindigkeit aktualisieren
-        self.velocity = newVal
+    def update_velocity(self, new_velocity):
+        self.velocity = new_velocity
 
 
-def optimize(cost_func, n_dimensions, boundaries, n_particles, n_iterations, w, cp, cg, verbose=False):
-    '''
-    Partikel-Schwarm-Optimisierung
-    Minimierung einer Kostenfunktion
+def optimize(
+    cost_func,
+    n_dimensions,
+    boundaries,
+    n_particles,
+    n_iterations,
+    w,
+    cp,
+    cg,
+    verbose=False,
+):
+    """
+    Führt Partikel-Schwarm-Optimierung (PSO) zur Minimierung der Kostenfunktion durch.
 
-    Parameter:
-    cost_func: A function that will evaluate a given input, return a float value
-    n_dimension: Dimensionality of the problem
-    boundaries: Problem's search space boundaries
-    n_particles: Number of particles
-    n_iteration: Number of iterations
-    w: Inertia parameter
-    cp: Constant parameter influencing the cognitive component (how much the current particle's best position will influnce its next iteration)
-    cg: Constant parameter influencing the social component (how much the global solution will influnce its next iteration of a particle)
-    verbose: Flag to turn on output prints (default is False)
+    Parameters
+    ----------
+    cost_func : function
+        Kostenfunktion f(x) -> float, die minimiert werden soll
+    n_dimensions : int
+        Anzahl der Dimensionen des Suchraums
+    boundaries : list[float]
+        Obergrenze für jede Dimension
+    n_particles : int
+        Anzahl der Partikel im Schwarm
+    n_iterations : int
+        Maximale Anzahl Iterationen
+    w : float
+        Trägheitsgewicht
+    cp : float
+        Kognitiver Faktor (Einfluss der eigenen Bestposition)
+    cg : float
+        Sozialer Faktor (Einfluss der global besten Position)
+    verbose : bool, optional
+        Gibt Fortschritt und Ergebnisse aus (Standard: False)
 
-    Rückgabe:
-    global_solution: Solution of the optimization
-    gs_eval: Evaluation of global_solution with cost_func
-    gs_history: List of the global solution at each iteration of the algorithm
-    gs_eval_history: List of the global solution's evaluation at each iteration of the algorithm
-    '''
+    Returns
+    -------
+    global_solution : list[float]
+        Beste gefundene Lösung im Suchraum
+    gs_eval : float
+        Wert der Kostenfunktion an der besten Lösung
+    gs_history : list[list[float]]
+        Historie der global besten Positionen
+    gs_eval_history : list[float]
+        Historie der besten Kostenwerte
+    """
+    particles = [Particle(n_dimensions, boundaries) for _ in range(n_particles)]
 
-    particles = []          # Einzellösungen
-    global_solution = []    # Aktuell beste Lösung im Schwarm
-    gs_eval = []            # Wert der Kostenfunktion an der global_solution
-    gs_history = []         # Historie der besten Lösungen pro Iteration
-    gs_eval_history = []    # Historie der Kosten der besten Lösungen der Iteration
-
-    if verbose:
-        print()
-        print("PARAMETER")
-        print("Anzahl der Dimensionen:", n_dimensions)
-        print("Anzahl der Iterationen:", n_iterations)
-        print("Anzahl der Partikel:", n_particles)
-        print("w: {}\tcp: {}\tcg: {}".format(w, cp, cg))
-        print()
-        print("OPTIMISIERUNG")
-        print("Initialisieren...")
-
-    # Jeder Partikel kriegt eine zufällige Position und Geschwindigkeit
-    for i in range(n_particles):
-        particles.append(Particle(n_dimensions, boundaries))
-
-    # Position des ersten Partikels als Startwert
-    global_solution = particles[0].position
+    global_solution = particles[0].position.copy()
     gs_eval = cost_func(global_solution)
-    # Falls ein Partikel eine bessere Lösung hat (kleinerer Kostenwert), wird global_solution ersetzt
-    for p in particles:
-        p_eval = cost_func(p.best_position)
-        if p_eval < gs_eval:
-            global_solution = p.best_position
-            gs_eval = cost_func(global_solution)
 
-    # Speichern der Startwerte
-    gs_history.append(global_solution)
-    gs_eval_history.append(gs_eval)
+    # Suche nach initialer globaler Bestposition
+    for p in particles:
+        eval_p = cost_func(p.best_position)
+        if eval_p < gs_eval:
+            global_solution = p.best_position.copy()
+            gs_eval = eval_p
+
+    gs_history = [global_solution.copy()]
+    gs_eval_history = [gs_eval]
 
     if verbose:
-        print("Optimisierung gestartet...")
-        printProgressBar(0, n_iterations, prefix='Fortschritt:', suffix='Fertig', length=50)
+        print("\nPARAMETER")
+        print(f"Anzahl Dimensionen: {n_dimensions}")
+        print(f"Anzahl Iterationen: {n_iterations}")
+        print(f"Anzahl Partikel:    {n_particles}")
+        print(f"w: {w}\tcp: {cp}\tcg: {cg}\n")
+        print("OPTIMIERUNG STARTET...")
+        printProgressBar(
+            0, n_iterations, prefix="Fortschritt:", suffix="Fertig", length=50
+        )
 
-    # Timer und Start des "richtigen PSOs"
     start_time = time.time_ns()
 
     for k in range(n_iterations):
         for p in particles:
-            # Zufallsgewichte
-            rp = random.uniform(0, 1)   # eigene Erfahrung
-            rg = random.uniform(0, 1)   # Schwarm-Informationen
+            rp = random.random()
+            rg = random.random()
 
-            velocity = []
+            new_velocity = []
             new_position = []
+
             for i in range(n_dimensions):
-                # Trägheit berechen (w*alte_v)
-                # kognitive Komponente
-                # soziale Komponente
-                velocity.append(w * p.velocity[i] + \
-                                cp * rp * (p.best_position[i] - p.position[i]) + \
-                                cg * rg * (global_solution[i] - p.position[i]))
+                # PSO-Geschwindigkeitsformel
+                vi = (
+                    w * p.velocity[i]
+                    + cp * rp * (p.best_position[i] - p.position[i])
+                    + cg * rg * (global_solution[i] - p.position[i])
+                )
 
-                # Geschwindigkeit begrenzen
-                if velocity[i] < -boundaries[i]:
-                    velocity[i] = -boundaries[i]
-                elif velocity[i] > boundaries[i]:
-                    velocity[i] = boundaries[i]
+                # Begrenzung der Geschwindigkeit
+                vi = max(-boundaries[i], min(boundaries[i], vi))
+                xi = p.position[i] + vi
 
-                # Neue Position = alte + neue Geschwindigkeit
-                new_position.append(p.position[i] + velocity[i])
-                # Position bleibt im erlaubten Suchbereich
-                if new_position[i] < 0.0:
-                    new_position[i] = 0.0
-                elif new_position[i] > boundaries[i]:
-                    new_position[i] = boundaries[i]
+                # Begrenzung der Position im Suchraum
+                xi = max(0.0, min(boundaries[i], xi))
 
-            # Geschwindigkeit und Position speichern
-            p.update_velocity(velocity)
+                new_velocity.append(vi)
+                new_position.append(xi)
+
+            p.update_velocity(new_velocity)
             p.update_position(new_position)
 
-            # Kostenwert der aktuellen Position berechnen
-            p_eval = cost_func(p.position)
-            if p_eval < cost_func(p.best_position):
-                # persönlich beste Position aktualisieren
-                p.update_best_position(p.position)
-                # wenn besser als globale pos, dann global_solution ersetzen
-                if p_eval < gs_eval:
-                    global_solution = p.position
-                    gs_eval = p_eval
+            current_eval = cost_func(p.position)
+            if current_eval < cost_func(p.best_position):
+                p.update_best_position(p.position.copy())
+                if current_eval < gs_eval:
+                    global_solution = p.position.copy()
+                    gs_eval = current_eval
 
-        # Verlauf der besten Positionen
+        gs_history.append(global_solution.copy())
         gs_eval_history.append(gs_eval)
-        gs_history.append(global_solution)
 
         if verbose:
-            printProgressBar(k + 1, n_iterations, prefix='Fortschritt:', suffix='Fertig', length=50)
+            printProgressBar(
+                k + 1, n_iterations, prefix="Fortschritt:", suffix="Fertig", length=50
+            )
 
-    # Timer stoppen
-    finish_time = time.time_ns()
-    elapsed_time = (finish_time - start_time) / 10e8
+    elapsed = (time.time_ns() - start_time) / 1e9
 
     if verbose:
-        time.sleep(0.2)
-        print("Ende der Optimizierung")
-        print()
-        print("ERGEBNISSE")
-        print("Benötige Optimisierungszeit: {:.2f} s".format(elapsed_time))
-        print("berechnete Lösung: {:.5f}".format(gs_eval))
+        print("\n\nERGEBNISSE")
+        print(f"Optimierungszeit: {elapsed:.2f} s")
+        print(f"Beste Lösung:     {gs_eval:.5f}")
 
     return global_solution, gs_eval, gs_history, gs_eval_history
 
 
-
-def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+def printProgressBar(
+    iteration,
+    total,
+    prefix="",
+    suffix="",
+    decimals=1,
+    length=50,
+    fill="█",
+    printEnd="\r",
+):
     """
-    Call in a loop to create terminal progress bar
+    Fortschrittsbalken für Terminalausgabe.
 
-    (aus altem Code gezogen)
-    @params:
-        iteration   - Benötigt: current iteration (Int)
-        total       - Benötigt: total iterations (Int)
-        prefix      - Optional: prefix string (Str)
-        suffix      - Optional: suffix string (Str)
-        decimals    - Optional: positive number of decimals in percent complete (Int)
-        length      - Optional: character length of bar (Int)
-        fill        - Optional: bar fill character (Str)
-        printEnd    - Optional: end character (e.g. "\r", "\r\n") (Str)
+    Parameters
+    ----------
+    iteration : int
+        Aktuelle Iteration
+    total : int
+        Gesamtanzahl Iterationen
+    prefix : str
+        Text vor dem Balken
+    suffix : str
+        Text nach dem Balken
+    decimals : int
+        Nachkommastellen bei Prozentangabe
+    length : int
+        Breite des Balkens (Anzahl Zeichen)
+    fill : str
+        Zeichen zur Darstellung des gefüllten Balkens
+    printEnd : str
+        Ende-Zeichen (z. B. "\r", "\n")
     """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    percent = f"{100 * (iteration / float(total)):.{decimals}f}"
     filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
-    # Print New Line on Complete
+    bar = fill * filledLength + "-" * (length - filledLength)
+    print(f"\r{prefix} |{bar}| {percent}% {suffix}", end=printEnd)
     if iteration == total:
         print()

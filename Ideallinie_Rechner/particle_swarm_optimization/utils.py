@@ -3,34 +3,42 @@ import matplotlib.pyplot as plt
 
 
 def plot_lines(lines):
-    for l in lines:
-        x, y = l.xy
+    """
+    Plottet eine Liste von Linien (z. B. Shapely LineStrings).
+
+    Parameters
+    ----------
+    lines : list
+        Liste von Linienobjekten mit Attribut `.xy` (z. B. Shapely LineString)
+    """
+    for line in lines:
+        x, y = line.xy
         plt.plot(x, y)
 
 
 def get_closet_points(point, array):
-    '''Closest point
-
-    Given a point and an array of points, returns the array point with the lower euclidean distance to the original point.
+    """
+    Gibt den Punkt aus einer Liste zurück, der dem gegebenen Punkt am nächsten liegt (euklidische Distanz).
 
     Parameters
     ----------
-    point : list
-        Point coordinates
-    array : list
-        List of coordinates
+    point : list[float, float]
+        Zielpunkt (z. B. [x, y])
+    array : list[list[float, float]]
+        Liste von 2D-Punkten (z. B. [[x1, y1], [x2, y2], ...])
 
     Returns
     -------
-    result : list
-        Point coordinate in the array list
-    '''
-
-    result = []
-    distance = 1000
-    for i in range(len(array)):
-        temp = math.sqrt((point[0] - array[i][0]) ** 2 + (point[1] - array[i][1]) ** 2)
-        if temp < distance:
-            distance = temp
-            result = [array[i][0], array[i][1]]
-    return result
+    list[float, float]
+        Der Punkt aus `array`, der dem gegebenen `point` am nächsten liegt
+    """
+    min_distance = float("inf")
+    closest_point = None
+    for candidate in array:
+        dx = point[0] - candidate[0]
+        dy = point[1] - candidate[1]
+        dist = math.hypot(dx, dy)
+        if dist < min_distance:
+            min_distance = dist
+            closest_point = candidate
+    return closest_point
